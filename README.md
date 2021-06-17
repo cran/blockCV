@@ -3,9 +3,10 @@
 [![Build Status](https://travis-ci.org/rvalavi/blockCV.svg?branch=master)](https://travis-ci.org/rvalavi/blockCV)
 [![AppVeyor build status](https://ci.appveyor.com/api/projects/status/github/rvalavi/blockCV?branch=master&svg=true)](https://ci.appveyor.com/project/rvalavi/blockCV)
 [![codecov](https://codecov.io/gh/rvalavi/blockCV/branch/master/graph/badge.svg)](https://codecov.io/gh/rvalavi/blockCV)
+[![CRAN version](https://www.r-pkg.org/badges/version/blockCV)](https://CRAN.R-project.org/package=blockCV)
+[![total](http://cranlogs.r-pkg.org/badges/grand-total/blockCV)](https://www.rpackages.io/package/blockCV)
 [![License](https://img.shields.io/badge/license-GPL%20%28%3E=%203%29-lightgrey.svg?style=flat)](http://www.gnu.org/licenses/gpl-3.0.html)
 [![DOI](https://zenodo.org/badge/116337503.svg)](https://zenodo.org/badge/latestdoi/116337503)
-[![CRAN version](https://www.r-pkg.org/badges/version/blockCV)](https://CRAN.R-project.org/package=blockCV)
 
 
 ### Spatial and environmental blocking for k-fold cross-validation   
@@ -31,7 +32,11 @@ To install the package from GitHub use:
 ```r
 remotes::install_github("rvalavi/blockCV", dependencies = TRUE)
 ```
+Or installing from CRAN:
 
+```r
+install.packages("blockCV", dependencies = TRUE)
+```
 
 ## Vignette
 To see the vignette of the package use:
@@ -52,9 +57,9 @@ library(blockCV)
 # spatial blocking by specified range and random assignment
 sb <- spatialBlock(speciesData = pa_data, # sf or SpatialPoints
                    species = "Species", # the response column (binomial or multi-class)
-                   rasterLayer = myrasters, # a raster for backgoround (optional)
-                   theRange = 70000, # size of the blocks
-                   k = 5, # the number of folds
+                   rasterLayer = myrasters, # a raster for background (optional)
+                   theRange = 70000, # size of the blocks in meters
+                   k = 5, # number of folds
                    selection = "random",
                    iteration = 100, # find evenly dispersed folds
                    biomod2Format = TRUE)
@@ -65,7 +70,7 @@ sb <- spatialBlock(speciesData = pa_data, # sf or SpatialPoints
 ```r
 # investigate spatial autocorrelation in raster covariates
 # this helps to choose a suitable size for spatial blocks
-spatialAutoRange(rasterLayer = myrasters, # raster file
+spatialAutoRange(rasterLayer = myrasters, # rasterStack file
                  sampleNumber = 5000, # number of cells to be used
                  doParallel = TRUE,
                  showPlots = TRUE)

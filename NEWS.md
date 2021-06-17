@@ -1,3 +1,15 @@
+# version 2.1.4
+* fixed CRAN error for ggplot guide 
+* added rgdal as a suggest
+* changed the crs of raster data in the package to avoid datum warnings
+
+# version 2.1.3
+* fix the warning for spatialBlock function on geographic coordinate system
+
+# version 2.1.2
+* predefined folds from user-defined blocks are noe accepted
+* add seed argument to spatialBlock to have consistent results where needed
+
 # version 2.1.0
 * snowfall package for parallel processing is replaces by future.apply package; #7
 * future.apply, shiny, shinydashboard, geosphere and ggplot2 packages moved to SUGGESTION packages. These are not install by default and the user is asked if needed. #7
