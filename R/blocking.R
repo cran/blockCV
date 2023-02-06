@@ -1,32 +1,6 @@
 #' Use spatial blocks to separate train and test folds
 #'
-#' This function creates spatially separated folds based on a pre-specified distance. It assigns blocks to the training and
-#' testing folds  \strong{randomly},  \strong{systematically} or in a  \strong{checkerboard pattern}. The distance (\code{theRange})
-#' should be in \strong{metres}, regardless of the unit of the reference system of
-#' the input data (for more information see the details section). By default,
-#' the function creates blocks according to the extent and shape of the study area, assuming that the user has considered the
-#' landscape for the given species and case study. Alternatively, blocks can solely be created based on species spatial data.
-#' Blocks can also be offset so the origin is not at the outer
-#' corner of the rasters. Instead of providing a distance, the blocks can also be created by specifying a number of rows and/or
-#' columns and divide the study area into vertical or horizontal bins, as presented in Wenger & Olden (2012) and Bahn & McGill (2012).
-#' Finally, the blocks can be specified by a user-defined spatial polygon layer.
-#'
-#'
-#' To keep the consistency, all the functions use \strong{metres} as their unit. In this function, when the input map
-#' has geographic coordinate system (decimal degrees), the block size is calculated based on deviding \code{theRange} by
-#' 111325 (the standard distance of a degree in metres, on the Equator) to change the unit to degree. This value is optional
-#' and can be changed by user via \code{degMetre} argument.
-#'
-#' The \code{xOffset} and \code{yOffset} can be used to change the spatial position of the blocks. It can also be used to
-#' assess the sensitivity of analysis results to shifting in the blocking arrangements. These options are available when \code{theRange}
-#' is defined. By default the region is located in the middle of the blocks and by setting the offsets, the blocks will shift.
-#'
-#' Roberts et. al. (2017) suggest that blocks should be substantially bigger than the range of spatial
-#' autocorrelation (in model residual) to obtain realistic error estimates, while a buffer with the size of
-#' the spatial autocorrelation range would result in a good estimation of error. This is because of the so-called
-#' edge effect (O'Sullivan & Unwin, 2014), whereby points located on the edges of the blocks of opposite sets are
-#' not separated spatially. Blocking with a buffering strategy overcomes this issue (see \code{\link{buffering}}).
-#'
+#' This function is deprecated and will be removed in future updates! Please use \code{\link{cv_spatial}} instead!
 #'
 #' @inheritParams buffering
 #' @param species Character (optional). Indicating the name of the column in which species data (response variable e.g. 0s and 1s) is stored.
@@ -46,13 +20,11 @@
 #' the species (response) points. If the selection = 'predefined', this argument (and foldsCol) must be supplied.
 #' @param foldsCol Character. Indicating the name of the column (in user-defined blocks) in which the associated folds are stored.
 #' This argument is necessary if you choose the 'predefined' selection.
-#' @param numLimit Integer value. The minimum number of points in each training and testing folds.
-#' If \code{numLimit = 0}, the most evenly dispersed number of records is chosen (given the number of iteration).
-#' This option no longer accepts NULL as input. If it is set to NULL, 0 is used instead.
+#' @param numLimit deprecated option!
 #' @param maskBySpecies Since version 1.1, this option is always set to \code{TRUE}.
 #' @param degMetre Integer. The conversion rate of metres to degree. See the details section for more information.
 #' @param rasterLayer A raster object for visualisation (optional). If provided, this will be used to specify the blocks covering the area.
-#' @param border A sf or SpatialPolygons object to clip the block based on it (optional).
+#' @param border deprecated option!
 #' @param showBlocks Logical. If TRUE the final blocks with fold numbers will be created with ggplot and plotted. A raster layer could be specified
 #' in \code{rasterlayer} argument to be as background.
 #' @param biomod2Format Logical. Creates a matrix of folds that can be directly used in the \pkg{biomod2} package as
@@ -66,69 +38,9 @@
 #' @param seed Integer. A random seed generator for reproducibility.
 #' @param verbose Logical. To print the report of the recods per fold.
 #'
-#' @seealso \code{\link{spatialAutoRange}} and \code{\link{rangeExplorer}} for selecting block size; \code{\link{buffering}}
-#' and \code{\link{envBlock}} for alternative blocking strategies; \code{\link{foldExplorer}} for visualisation of the generated folds.
-#' @seealso For \emph{DataSplitTable} see \code{\link[biomod2]{BIOMOD_cv}} in \pkg{biomod2} package
+#' @seealso \code{\link{cv_spatial}}
 #'
-#' @references Bahn, V., & McGill, B. J. (2012). Testing the predictive performance of distribution models. Oikos, 122(3), 321-331.
-#'
-#' O'Sullivan, D., Unwin, D.J., (2010). Geographic Information Analysis, 2nd ed. John Wiley & Sons.
-#'
-#' Roberts et al., (2017). Cross-validation strategies for data with temporal, spatial, hierarchical,
-#' or phylogenetic structure. Ecography. 40: 913-929.
-#'
-#' Wenger, S.J., Olden, J.D., (2012). Assessing transferability of ecological models: an underappreciated aspect of statistical
-#' validation. Methods Ecol. Evol. 3, 260-267.
-#'
-#' @return An object of class S3. A list of objects including:
-#'    \itemize{
-#'     \item{folds - a list containing the folds. Each fold has two vectors with the training (first) and testing (second) indices}
-#'     \item{foldID - a vector of values indicating the number of the fold for each observation (each number corresponds to the same point in species data)}
-#'     \item{biomodTable - a matrix with the folds to be used in \pkg{biomod2} package}
-#'     \item{k - number of the folds}
-#'     \item{blocks - SpatialPolygon of the blocks}
-#'     \item{range - the distance band of separating trainig and testing folds, if provided}
-#'     \item{species - the name of the species (column), if provided}
-#'     \item{plots - ggplot object}
-#'     \item{records - a table with the number of points in each category of training and testing}
-#'     }
 #' @export
-#'
-#' @examples
-#' \donttest{
-#'
-#' # load package data
-#' library(sf)
-#'
-#' awt <- raster::brick(system.file("extdata", "awt.grd", package = "blockCV"))
-#' # import presence-absence species data
-#' PA <- read.csv(system.file("extdata", "PA.csv", package = "blockCV"))
-#' # make a sf object from data.frame
-#' pa_data <- sf::st_as_sf(PA, coords = c("x", "y"), crs = raster::crs(awt))
-#'
-#' # spatial blocking by specified range and random assignment
-#' sb1 <- spatialBlock(speciesData = pa_data,
-#'                     species = "Species",
-#'                     theRange = 70000,
-#'                     k = 5,
-#'                     selection = "random",
-#'                     iteration = 100,
-#'                     numLimit = NULL,
-#'                     biomod2Format = TRUE,
-#'                     xOffset = 0.3, # shift the blocks horizontally
-#'                     yOffset = 0)
-#'
-#' # spatial blocking by row/column and systematic fold assignment
-#' sb2 <- spatialBlock(speciesData = pa_data,
-#'                     species = "Species",
-#'                     rasterLayer = awt,
-#'                     rows = 5,
-#'                     cols = 8,
-#'                     k = 5,
-#'                     selection = "systematic",
-#'                     biomod2Format = TRUE)
-#'
-#' }
 spatialBlock <- function(speciesData,
                          species = NULL,
                          rasterLayer = NULL,
@@ -137,7 +49,7 @@ spatialBlock <- function(speciesData,
                          cols = NULL,
                          k = 5L,
                          selection = "random",
-                         iteration = 100L,
+                         iteration = 50L,
                          blocks = NULL,
                          foldsCol = NULL,
                          numLimit = 0L,
@@ -148,9 +60,76 @@ spatialBlock <- function(speciesData,
                          biomod2Format = TRUE,
                          xOffset = 0,
                          yOffset = 0,
-                         seed = NULL,
+                         seed = 42,
                          progress = TRUE,
                          verbose = TRUE){
+
+  message("This function is deprecated! Please use 'cv_spatial' instead.")
+
+  # speciesData <- .check_x(speciesData, name = "speciesData")
+  #
+  # .check_pkgs("sf")
+  #
+  # if(!is.null(species)){
+  #   if(!species %in% colnames(speciesData)){
+  #     warning(sprintf("There is no column named '%s' in 'speciesData'.\n", species))
+  #     species <- NULL
+  #   }
+  # }
+  #
+  # # checks for pre-defined folds
+  # if(selection == "predefined"){
+  #   if(is.null(foldsCol) || is.null(blocks)){
+  #     stop("The 'blocks' and 'foldsCol' should be specified for 'predefined' selection")
+  #   }
+  #   if(!foldsCol %in% colnames(blocks)){
+  #     stop(sprintf("There is no column named '%s' in 'blocks'.\n", foldsCol))
+  #   }
+  #   if(!is.numeric(blocks[,foldsCol, drop = TRUE])){
+  #     stop("The fold numbers in 'foldsCol' must be integer numbers.")
+  #   }
+  # }
+  #
+  # # change the r to terra object
+  # if(!is.null(rasterLayer)){
+  #   rasterLayer <- .check_r(rasterLayer, name = "rasterLayer")
+  # }
+  #
+  # out <- cv_spatial(
+  #   x = speciesData,
+  #   column = species,
+  #   r = rasterLayer,
+  #   k = k,
+  #   hexagon = FALSE,
+  #   flat_top = FALSE,
+  #   size = theRange,
+  #   rows_cols = c(rows, cols),
+  #   selection = selection,
+  #   iteration = iteration,
+  #   user_blocks = blocks,
+  #   folds_column = foldsCol,
+  #   deg_to_metre = degMetre,
+  #   biomod2 = biomod2Format,
+  #   offset = c(xOffset, yOffset),
+  #   seed = seed,
+  #   progress = progress,
+  #   report = verbose,
+  #   plot = showBlocks
+  # )
+  #
+  # theList <- list(folds = out$folds_list,
+  #                 foldID = out$folds_ids,
+  #                 biomodTable = out$biomod_table,
+  #                 k = k,
+  #                 blocks = sf::as_Spatial(out$blocks),
+  #                 species = out$column,
+  #                 range = out$size,
+  #                 plots = if(showBlocks) cv_plot(out) else NULL,
+  #                 records = out$records)
+
+
+
+
   if(showBlocks){
     # check for availability of ggplot2
     pkg <- c("ggplot2")
@@ -260,9 +239,12 @@ spatialBlock <- function(speciesData,
   } else if(is.numeric(iteration) && iteration >= 1000){
     message("The process might take a while, due to the large number of iterations.\n")
   }
-  if(progress==TRUE && numLimit == 0){
-    pb <- progress::progress_bar$new(format = " Progress [:bar] :percent in :elapsed",
-                                     total=iteration, clear=FALSE, width=75) # add progress bar
+  # if(progress==TRUE && numLimit == 0){
+  #   pb <- progress::progress_bar$new(format = " Progress [:bar] :percent in :elapsed",
+  #                                    total=iteration, clear=FALSE, width=75) # add progress bar
+  # }
+  if(progress && numLimit == 0){
+    pb <- utils::txtProgressBar(min = 0, max = iteration, style = 3)
   }
   ## do the intersection once and outside of the loop
   subBlocksDF <- as.data.frame(sf::st_intersects(sf::st_geometry(speciesData), sf::st_geometry(subBlocks)))
@@ -272,6 +254,7 @@ spatialBlock <- function(speciesData,
     if(!is.null(seed)){
       set.seed(seed)
     }
+    # set.seed(42)
     subBlocksDF <- subBlocksDF[sample(nrow(subBlocksDF)), ]
     subBlocksDF <- subBlocksDF[!duplicated(subBlocksDF$records), ]
   } else if(nrow(subBlocksDF) < nrow(speciesData) || anyNA(subBlocksDF)){
@@ -363,8 +346,11 @@ spatialBlock <- function(speciesData,
           iter <- i
         }
       } else stop("numLimit argument should be a numeric value equal or hagher than 0 or be NULL")
-      if(progress == TRUE && numLimit == 0){
-        pb$tick() # update progress bar
+      # if(progress == TRUE && numLimit == 0){
+      #   pb$tick() # update progress bar
+      # }
+      if(progress && numLimit == 0){ # if iteration is higher than 5?
+        utils::setTxtProgressBar(pb, i)
       }
     } else{
       break
@@ -400,7 +386,7 @@ spatialBlock <- function(speciesData,
                          fill ="orangered4",
                          alpha = 0.04,
                          size = 0.2) +
-        ggplot2::geom_sf_text(ggplot2::aes_string(label = "folds"),
+        ggplot2::geom_sf_text(ggplot2::aes(label = get("folds")),
                               data = subBlocks) +
         ggplot2::labs(x = "", y = "") + # or set the axes labes to NULL
         ggplot2::ggtitle("Spatial blocks",
@@ -413,15 +399,17 @@ spatialBlock <- function(speciesData,
         colnames(map_df) <- c("Easting", "Northing", "MAP")
         mid <- stats::median(map_df$MAP)
         p2 <- ggplot2::ggplot() +
-          ggplot2::geom_raster(data = map_df, ggplot2::aes_string(y="Northing", x="Easting", fill="MAP")) +
+          ggplot2::geom_tile(
+            data = map_df,
+            ggplot2::aes(y=get("Northing"), x=get("Easting"), fill=get("MAP"))) +
           ggplot2::scale_fill_gradient2(low="darkred", mid="yellow", high="darkgreen", midpoint=mid) +
-          ggplot2::guides(fill = FALSE) +
+          ggplot2::guides(fill = "none") +
           ggplot2::geom_sf(data = subBlocks,
                            color ="red",
                            fill ="orangered4",
                            alpha = 0.04,
                            size = 0.2) +
-          ggplot2::geom_sf_text(ggplot2::aes_string(label = "folds"),
+          ggplot2::geom_sf_text(ggplot2::aes(label = get("folds")),
                                 data = subBlocks) +
           ggplot2::labs(x = "", y = "") + # set the axes labes to NULL
           ggplot2::ggtitle("Spatial blocks",
@@ -444,11 +432,13 @@ spatialBlock <- function(speciesData,
                   foldID = foldNum,
                   biomodTable = biomodTable2,
                   k = k,
-                  blocks = sf::as_Spatial(subBlocks),
+                  # blocks = sf::as_Spatial(subBlocks),
+                  blocks = subBlocks,
                   species = species,
                   range = theRange,
                   plots = p2,
                   records = trainTestTable)
+
   class(theList) <- c("SpatialBlock")
   return(theList)
 }
@@ -478,4 +468,120 @@ plot.SpatialBlock <- function(x, y, ...){
 summary.SpatialBlock <- function(object, ...){
   cat("Number of recoreds in each training and testing fold:\n")
   print(object$records)
+}
+
+
+
+rasterNet <- function(x,
+                      resolution = NULL,
+                      xbin = NULL,
+                      ybin = NULL,
+                      mask = FALSE,
+                      degree = 111325,
+                      xOffset = NULL,
+                      yOffset = NULL,
+                      checkerboard = FALSE,
+                      maxpixels = 1e5){
+  if(methods::is(x, "sf")){
+    x <- sf::as_Spatial(x)
+  }
+  ext <- raster::extent(x)
+  extRef <- raster::extent(x)
+  if(is.na(raster::projection(x))){
+    mapext <- raster::extent(x)[1:4]
+    if(all(mapext >= -180) && all(mapext <= 180)){
+      resolution <- resolution / degree
+      warning("The input layer has no CRS defined. Based on the extent of the input map it is assumed to have an un-projected reference system")
+    } else {
+      resolution <- resolution
+      warning("The input layer has no CRS defined. Based on the extent of the input map it is assumed to have a projected reference system")
+    }
+  } else{
+    if(raster::isLonLat(x)){
+      resolution <- resolution / degree
+    } else{
+      resolution <- resolution
+    }
+  }
+  if(!is.null(xbin) && is.null(ybin)){
+    rasterNet <- raster::raster(ext, nrow=1, ncol=xbin, crs=raster::projection(x))
+  } else if(is.null(xbin) && !is.null(ybin)){
+    rasterNet <- raster::raster(ext, nrow=ybin, ncol=1, crs=raster::projection(x))
+  } else if(!is.null(xbin) && !is.null(ybin)){
+    rasterNet <- raster::raster(ext, nrow=ybin, ncol=xbin, crs=raster::projection(x))
+  } else if(is.null(xbin) && is.null(ybin) && !is.null(resolution)){
+    xrange <- raster::xmax(x) - raster::xmin(x) # number of columns
+    yrange <- raster::ymax(x) - raster::ymin(x) # number of rows
+    xPix <- ceiling(xrange / resolution)
+    yPix <- ceiling(yrange / resolution)
+    xdif <- ((xPix * resolution) - xrange) / 2 # the difference of extent divided by 2 to split on both sides
+    ydif <- ((yPix * resolution) - yrange) / 2
+    ext@xmin <- raster::xmin(x) - xdif
+    ext@xmax <- raster::xmax(x) + xdif
+    ext@ymin <- raster::ymin(x) - ydif
+    ext@ymax <- raster::ymax(x) + ydif
+    if(!is.null(xOffset)){
+      if(xOffset > 1 || xOffset < 0){stop("xOffset should be between 0 and 1")}
+      ext@xmin <- ext@xmin + (resolution * xOffset)
+      ext@xmax <- ext@xmax + (resolution * xOffset)
+    }
+    if(!is.null(yOffset)){
+      if(yOffset > 1 || yOffset < 0){stop("yOffset should be between 0 and 1")}
+      ext@ymin <- ext@ymin + (resolution * yOffset)
+      ext@ymax <- ext@ymax + (resolution * yOffset)
+    }
+    # adding cells if needed
+    if(ext@xmin > extRef@xmin){ # add one column by increasing the extent and number of bins
+      ext@xmin <- ext@xmin - resolution
+      xPix <- xPix + 1
+    }
+    if(ext@ymin > extRef@ymin){
+      ext@ymin <- ext@ymin - resolution
+      yPix <- yPix + 1
+    }
+    rasterNet <- raster::raster(ext, nrow=yPix, ncol=xPix, crs=raster::projection(x))
+  } else stop("A value should be specified for the block size")
+  if(checkerboard){
+    raster::values(rasterNet) <- seq_len(raster::ncell(rasterNet))
+    m <- raster::as.matrix(rasterNet)
+    for(i in seq_len(raster::ncol(rasterNet))){
+      if(i %% 2 == 0){
+        m[,i] <- rep(1:2, nrow(m))[seq_len(nrow(m))]
+      } else{
+        m[,i] <- rep(2:1, nrow(m))[seq_len(nrow(m))]
+      }
+    }
+    raster::values(rasterNet) <- m # rasterNet[] <- m
+  } else{
+    raster::values(rasterNet) <- seq_len(raster::ncell(rasterNet))
+  }
+  rasterNet <- raster::rasterToPolygons(rasterNet)
+  if(mask){
+    if(methods::is(x, "Raster")){
+      points <- raster::rasterToPoints(x[[1]], spatial=TRUE)
+      if(nrow(points) > 75e4){
+        maxpixels <- ifelse(maxpixels > 75e4, 75e4, maxpixels)
+        points2 <- points[sample(nrow(points), maxpixels, replace=FALSE), ]
+        rasterNet <- raster::intersect(rasterNet, points2)
+      } else {
+        rasterNet <- raster::intersect(rasterNet, points)
+      }
+    } else{
+      rasterNet <- raster::intersect(rasterNet, x)
+    }
+  }
+  return(sf::st_as_sf(rasterNet))
+}
+
+systematicNum <- function(layer, num=5){
+  n <- nrow(layer)
+  if(n %% num == 0){
+    a <- n/num
+    c <- rep(1:num, a)
+  } else {
+    a <- floor(n/num)
+    b <- n %% num
+    c <- c(rep(1:num, a), 1:b)
+  }
+  return(c)
 }
