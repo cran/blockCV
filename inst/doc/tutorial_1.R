@@ -6,7 +6,7 @@
 #  remotes::install_github("rvalavi/blockCV", dependencies = TRUE)
 #  
 
-## ---- results="hide", warning=FALSE, message=FALSE----------------------------
+## ----message=TRUE, warning=TRUE-----------------------------------------------
 # loading the package
 library(blockCV)
 
@@ -49,13 +49,36 @@ sb1 <- cv_spatial(x = pa_data,
                   biomod2 = TRUE) # also create folds for biomod2
 
 
+## ---- warning=FALSE, message=FALSE, fig.height=5, fig.width=7-----------------
+sb2 <- cv_spatial(x = pa_data,
+                  column = "occ",
+                  r = rasters, # optionally add a raster layer
+                  k = 5, 
+                  size = 350000, 
+                  hexagon = FALSE, # use square blocks
+                  selection = "random",
+                  progress = FALSE, # turn off progress bar for vignette
+                  iteration = 50, 
+                  biomod2 = TRUE)
+
+
 ## ----warning=FALSE, message=FALSE, fig.height=5, fig.width=7------------------
+# systematic fold assignment 
+# and also use row/column for creating blocks instead of size
+sb3 <- cv_spatial(x = pa_data,
+                  column = "occ",
+                  rows_cols = c(12, 10),
+                  hexagon = FALSE,
+                  selection = "systematic")
+
+
+## ----warning=FALSE, message=FALSE, fig.height=5, fig.width=7------------------
+# checkerboard block to CV fold assignment
 sb4 <- cv_spatial(x = pa_data,
                   column = "occ",
                   size = 350000,
                   hexagon = FALSE,
-                  selection = "checkerboard",
-                  iteration = 50)
+                  selection = "checkerboard")
 
 
 ## ----warning=FALSE, message=FALSE, fig.height=5, fig.width=7------------------
@@ -86,7 +109,7 @@ bloo <- cv_buffer(x = pa_data,
                   size = 350000)
 
 
-## -----------------------------------------------------------------------------
+## ----fig.height=5, fig.width=7------------------------------------------------
 nncv <- cv_nndm(x = pa_data,
                 column = "occ",
                 r = rasters,
@@ -97,15 +120,15 @@ nncv <- cv_nndm(x = pa_data,
                 plot = TRUE)
 
 
-## ----warning=FALSE, message=FALSE, fig.height=6, fig.width=10-----------------
+## ----warning=FALSE, message=FALSE, fig.height=6, fig.width=8------------------
 cv_plot(cv = scv, 
         x = pa_data)
 
 
-## ----warning=FALSE, message=FALSE, fig.height=5, fig.width=10-----------------
+## ----warning=FALSE, message=FALSE, fig.height=5, fig.width=8------------------
 cv_plot(cv = bloo,
         x = pa_data,
-        num_plots = c(1, 50, 100)) 
+        num_plots = c(1, 50, 100)) # only show folds 1, 50 and 100
 
 
 ## ----warning=FALSE, message=FALSE, fig.height=5, fig.width=7------------------

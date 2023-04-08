@@ -20,6 +20,7 @@ cv_spatial(
   deg_to_metre = 111325,
   biomod2 = TRUE,
   offset = c(0, 0),
+  extend = 0,
   seed = NULL,
   progress = TRUE,
   report = TRUE,
@@ -69,12 +70,17 @@ This argument is necessary if you choose the 'predefined' selection.}
 \item{deg_to_metre}{integer. The conversion rate of metres to degree. See the details section for more information.}
 
 \item{biomod2}{logical. Creates a matrix of folds that can be directly used in the \pkg{biomod2} package as
-a \emph{DataSplitTable} for cross-validation.}
+a \emph{data.split.table} for cross-validation.}
 
 \item{offset}{two number between 0 and 1 to shift blocks by that proportion of block size.
 This option only works when \code{size} is provided.}
 
-\item{seed}{integer; a random seed for reproducibility.}
+\item{extend}{numeric; This parameter specifies the percentage by which the map's extent is
+expanded to increase the size of the square spatial blocks, ensuring that all points fall
+within a block. The value should be a numeric between 0 and 5.}
+
+\item{seed}{integer; a random seed for reproducibility (although an external seed
+should also work).}
 
 \item{progress}{logical; whether to shows a progress bar for random fold selection.}
 
@@ -94,7 +100,7 @@ An object of class S3. A list of objects including:
     \item{k - number of the folds}
     \item{size - input size, if not null}
     \item{column - the name of the column if provided}
-    \item{blocks - SpatialPolygon of the blocks}
+    \item{blocks - spatial polygon of the blocks}
     \item{records - a table with the number of points in each category of training and testing}
     }
 }
@@ -104,19 +110,21 @@ It assigns blocks to the training and testing folds \strong{randomly}, \strong{s
 in a \strong{checkerboard pattern}. The distance (\code{size})
 should be in \strong{metres}, regardless of the unit of the reference system of
 the input data (for more information see the details section). By default,
-the function creates blocks according to the extent and shape of the spatial sample data (\code{x} e.g. the species occurrence),
-Alternatively, blocks can be created based on \code{r} assuming that the user has considered the
-landscape for the given species and case study.
+the function creates blocks according to the extent and shape of the spatial sample data (\code{x} e.g.
+the species occurrence), Alternatively, blocks can be created based on \code{r} assuming that the
+user has considered the landscape for the given species and case study.
 Blocks can also be offset so the origin is not at the outer corner of the rasters.
 Instead of providing a distance, the blocks can also be created by specifying a number of rows and/or
-columns and divide the study area into vertical or horizontal bins, as presented in Wenger & Olden (2012) and Bahn & McGill (2012).
-Finally, the blocks can be specified by a user-defined spatial polygon layer.
+columns and divide the study area into vertical or horizontal bins, as presented in Wenger & Olden (2012)
+and Bahn & McGill (2012). Finally, the blocks can be specified by a user-defined spatial polygon layer.
 }
 \details{
-To keep the consistency, all the functions use \strong{metres} as their unit. In this function, when the input map
-has geographic coordinate system (decimal degrees), the block size is calculated based on dividing \code{size} by
-\code{deg_to_metre} (111325 as default, the standard distance of a degree in metres, on the Equator) to change
-the unit to degree.
+To maintain consistency, all functions in this package use \strong{meters} as their unit of
+measurement. However, when the input map has a geographic coordinate system (in decimal degrees),
+the block size is calculated by dividing the \code{size} parameter by \code{deg_to_metre} (which
+defaults to 111325 meters, the standard distance of one degree of latitude on the Equator).
+In reality, this value varies by a factor of the cosine of the latitude. So, an alternative sensible
+value could be \code{cos(mean(sf::st_bbox(x)[c(2,4)]) * pi/180) * 111325}.
 
 The \code{offset} can be used to change the spatial position of the blocks. It can also be used to
 assess the sensitivity of analysis results to shifting in the blocking arrangements.
@@ -170,5 +178,5 @@ validation. Methods Ecol. Evol. 3, 260-267.
 \seealso{
 \code{\link{cv_buffer}} and \code{\link{cv_cluster}}; \code{\link{cv_spatial_autocor}} and \code{\link{cv_block_size}} for selecting block size
 
-For \emph{DataSplitTable} see \code{\link[biomod2]{BIOMOD_cv}} in \pkg{biomod2} package
+For \emph{data.split.table} see \code{\link[biomod2]{BIOMOD_cv}} in \pkg{biomod2} package
 }
