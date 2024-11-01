@@ -1,4 +1,4 @@
-1d3fe5a1b79f6b4b463e83cf8571f558 *DESCRIPTION
+f0081cbcfb7d314db776c5fe5bb31e02 *DESCRIPTION
 0c45aae038e339e887f9aa26dc9c4876 *NAMESPACE
 6e4ad595745e95a3fe6ac6c282caebf4 *R/RcppExports.R
 edf1204e77b3b428988048d151f198e1 *R/blockCV-package.R
@@ -8,7 +8,7 @@ ec25e68b96badd717483aca092694e79 *R/checks.R
 22e06a7a37d1bd53aaa6695950335bf3 *R/cv_buffer.R
 2c320899b40e9659b20a93ef2db79f2f *R/cv_cluster.R
 f192923cb0868026907482c50a13e6b7 *R/cv_nndm.R
-2b0290e138dd500793cab93973183e60 *R/cv_plot.R
+27687d44cfb61bc91223be2622c6ff6f *R/cv_plot.R
 a5afbed0e72d5b6e4bb029356ce8a2f9 *R/cv_similarity.R
 f0648dd646b65ca04358d809a3d85604 *R/cv_spatial.R
 edd6992b7d25de74495139381d98a8d1 *R/cv_spatial_autocor.R
@@ -18,14 +18,14 @@ edd6992b7d25de74495139381d98a8d1 *R/cv_spatial_autocor.R
 d364d682b941967aff4326c7702920b9 *R/v2_spatialAutoRange.R
 ecd9a9e0305c54dbb16ad6cf1294a64a *R/v2_spatialBlock.R
 f88979aca622a11b8b65eac1d122168e *R/zzz.R
-a54ff896f3db9a39f84df15f9de45ab7 *build/vignette.rds
+4b1b08a10f45ce3698d7297e553157eb *build/vignette.rds
 6c3f106359b18969b8dba3949dcc31f9 *inst/CITATION
 25c631c783aefdb57801375079925b54 *inst/doc/tutorial_1.R
 027270afe4b6a0c223c5bf390cfca7a0 *inst/doc/tutorial_1.Rmd
-9f60d6a25630cc2308dda74f30438a8b *inst/doc/tutorial_1.html
+a1446c99808e90ea9f070bf721668ae3 *inst/doc/tutorial_1.html
 242760444a705aaa8f87a701c17416ae *inst/doc/tutorial_2.R
 5d2323f91b8594110b7754a87083bfd2 *inst/doc/tutorial_2.Rmd
-b8da4da3e6bde8de7247636531c2aa43 *inst/doc/tutorial_2.html
+0942e6b74172c6b7c0211dedd813974d *inst/doc/tutorial_2.html
 936986aa6bc55e5726fa79e008e15bb3 *inst/extdata/au/bio_12.tif
 6e3122206616e08e8167458edd07ab1e *inst/extdata/au/bio_15.tif
 8de02ce25b81e0ebd256c74bdcdfab25 *inst/extdata/au/bio_4.tif
