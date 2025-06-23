@@ -2,8 +2,8 @@ Package: blockCV
 Type: Package
 Title: Spatial and Environmental Blocking for K-Fold and LOO
         Cross-Validation
-Version: 3.1-5
-Date: 2024-10-31
+Version: 3.1-6
+Date: 2025-06-23
 Authors@R: c(person("Roozbeh", "Valavi", role = c("aut", "cre"),
                     email = "valavi.r@gmail.com", comment = c(ORCID = "0000-0003-2495-5277")),
              person("Jane", "Elith", role = "aut",
@@ -30,11 +30,12 @@ VignetteBuilder: knitr
 Config/testthat/edition: 3
 LinkingTo: Rcpp
 NeedsCompilation: yes
-Packaged: 2024-11-01 00:54:01 UTC; val085
-Author: Roozbeh Valavi [aut, cre] (<https://orcid.org/0000-0003-2495-5277>),
+Packaged: 2025-06-23 04:38:33 UTC; val085
+Author: Roozbeh Valavi [aut, cre] (ORCID:
+    <https://orcid.org/0000-0003-2495-5277>),
   Jane Elith [aut],
   José Lahoz-Monfort [aut],
   Ian Flint [aut],
   Gurutzeta Guillera-Arroita [aut]
 Repository: CRAN
-Date/Publication: 2024-11-01 08:20:02 UTC
+Date/Publication: 2025-06-23 05:10:02 UTC
