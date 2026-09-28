@@ -9,7 +9,7 @@
 #' the distances the model will face when predicting over the target area. It does not compute pairwise
 #' distances for general use; it is a fold-quality diagnostic.
 #'
-#' Three to five empirical cumulative distribution functions of nearest-neighbour distances
+#' Three (optionally four) empirical cumulative distribution functions of nearest-neighbour distances
 #' are compared over a distance \code{r}:
 #' \itemize{
 #'   \item{\strong{Prediction} (\eqn{\hat{G}_{ij}}) - from each prediction point to its nearest sample
@@ -23,9 +23,6 @@
 #'   as \code{cv}, drawn only when \code{add_random = TRUE}. It shows where a naive random assignment lands,
 #'   so the improvement of the supplied design is visible. For leave-one-out objects (\code{cv_buffer},
 #'   \code{cv_nndm}) a random split coincides with the LOO curve, so it is omitted.}
-#'   \item{\strong{Transfer} - from each point of a \code{transfer} domain to its nearest sample point,
-#'   drawn only when \code{transfer} is supplied (see below). This is the distance regime the model meets
-#'   when transferred to that domain.}
 #' }
 #'
 #' The gap between each curve and the Prediction curve is summarised by the Wasserstein-1 distance (the
@@ -34,17 +31,6 @@
 #'
 #' When \code{space = "feature"} the distances are computed in the (optionally scaled) covariate space of
 #' \code{r} instead of the geographical space, mirroring \code{\link{cv_knndm}}.
-#'
-#' \strong{Transfer domain.} When a \code{transfer} raster is supplied, the diagnostic adds the
-#' \strong{Transfer} curve above and, in \code{$W_transfer}, the Wasserstein-1 distance of the CV, LOO and
-#' Prediction curves to it. \code{W_transfer["CV"]} is the headline transferability read: how faithfully the
-#' fold design rehearses the transfer task (lower means the cross-validation is a fairer rehearsal of the
-#' transfer). A Transfer curve that sits to the right of the LOO curve flags a domain that no fold design
-#' built from these samples can emulate, i.e. extrapolation beyond the support of the training data, which
-#' cross-validation cannot validate. Because the transfer domain is compared in the (shared, training-scaled)
-#' covariate space, \code{transfer} is only supported when \code{space = "feature"}; it must carry the same
-#' predictor layers as \code{r} (matched by name and standardised the same way), and it may cover a different
-#' time (e.g. a future climate scenario) or a different region entirely.
 #'
 #' When the supplied \code{cv} object was built with \code{presence_bg = TRUE} (in \code{\link{cv_spatial}},
 #' \code{\link{cv_cluster}}, \code{\link{cv_knndm}}, \code{\link{cv_buffer}} or \code{\link{cv_nndm}}), all
@@ -62,10 +48,6 @@
 #' \code{pred_points} nor \code{model_domain} is supplied, prediction points are sampled from it. It is
 #' also required (for the covariates) when \code{space = "feature"}. One of \code{r}, \code{pred_points},
 #' or \code{model_domain} is required.
-#' @param transfer a terra SpatRaster object (optional) defining a second, transfer prediction domain -- for
-#' example a future climate scenario or a different region -- to compare the fold design against. It must carry
-#' the same predictor layers as \code{r} (identical names) and is only supported when \code{space = "feature"},
-#' where its covariates are standardised with the same centring/scaling as the training data. See details.
 #' @param add_random logical; when \code{TRUE} (default), overlay the CV curve of a random \code{k}-fold
 #' split with the same number of folds as \code{cv} (ignored for leave-one-out objects, see details).
 #' @param num_random integer; the number of random \code{k}-fold splits used to estimate the random baseline
@@ -95,9 +77,6 @@
 #'   held-out point.}
 #'   \item{\code{W} - a named numeric vector of the Wasserstein-1 distance of each curve to the
 #'   Prediction curve (lower means a closer match to the prediction domain).}
-#'   \item{\code{W_transfer} - only present when \code{transfer} is supplied: a named numeric vector of the
-#'   Wasserstein-1 distance of the \code{CV}, \code{LOO} and \code{Prediction} curves to the Transfer curve
-#'   (lower means a closer match to the transfer domain). \code{W_transfer["CV"]} is the transferability read.}
 #'   \item{\code{plot} - the \code{ggplot} of the nearest-neighbour distance distributions (always built,
 #'   whether or not it is drawn).}
 #' }
@@ -130,7 +109,6 @@ cv_distance <- function(
         r = NULL,
         pred_points = NULL,
         model_domain = NULL,
-        transfer = NULL,
         space = "geographical",
         add_random = TRUE,
         num_random = 10L,
@@ -145,7 +123,7 @@ cv_distance <- function(
     # numeric diagnostics (the pure-data core, also reused by cv_summary())
     d <- .cv_distance_data(
         cv = cv, x = x, r = r, pred_points = pred_points, model_domain = model_domain,
-        transfer = transfer, space = space, add_random = add_random, num_random = num_random,
+        space = space, add_random = add_random, num_random = num_random,
         num_sample = num_sample, sampling = sampling, scale = scale, seed = seed
     )
 
@@ -156,12 +134,10 @@ cv_distance <- function(
 
     out <- list(
         distances = d$distances,
-        W = d$W
+        W = d$W,
+        plot = p,
+        pbg = isTRUE(d$pbg)
     )
-    # only carried when a transfer domain was supplied
-    if(!is.null(d$W_transfer)) out$W_transfer <- d$W_transfer
-    out$plot <- p
-    out$pbg <- isTRUE(d$pbg)
     class(out) <- "cv_distance"
     invisible(out)
 }
@@ -173,7 +149,7 @@ cv_distance <- function(
 # nearest-neighbour vectors the plot is built from. Shared by cv_distance() (to
 # draw the plot) and cv_summary() (data only).
 .cv_distance_data <- function(
-        cv, x, r = NULL, pred_points = NULL, model_domain = NULL, transfer = NULL,
+        cv, x, r = NULL, pred_points = NULL, model_domain = NULL,
         space = "geographical", add_random = TRUE, num_random = 10L,
         num_sample = 10000L, sampling = "regular", scale = TRUE, seed = NULL
 ){
@@ -200,31 +176,12 @@ cv_distance <- function(
         }
     }
 
-    # transfer domain (optional): a second prediction domain -- e.g. a future climate
-    # scenario or a different region -- to compare the fold design against. It is only
-    # meaningful in feature space, where its covariates are standardised with the same
-    # centring/scaling as the training data, so it may sit in a different region entirely
-    # as long as it carries the same predictors (matched by name).
-    if(!is.null(transfer)){
-        if(space != "feature"){
-            stop("'transfer' is only supported when space = 'feature'; geographical distances do not change between domains.")
-        }
-        transfer <- .check_r(transfer, name = "transfer")
-        if(terra::nlyr(transfer) != terra::nlyr(r) || !setequal(names(transfer), names(r))){
-            stop("'transfer' must have the same layers as 'r' (identical layer names).")
-        }
-        # align layer order to 'r' so the shared standardisation matches column-for-column
-        transfer <- transfer[[names(r)]]
-    }
-
     if(!is.null(seed)) set.seed(seed)
 
     n <- nrow(x)
 
     # resolve the prediction points -------------------------------------------
     predpts <- .knndm_predpoints(x, r, pred_points, model_domain, num_sample, sampling)
-    # sample the transfer domain from its own extent (same convention as predpts)
-    transfer_pts <- if(!is.null(transfer)) .sample_raster_points(transfer, num_sample, sampling, name = "transfer") else NULL
 
     # presence-background objects: express every distance relative to the presences (1s)
     pbg <- isTRUE(cv$presence_bg) && !is.null(cv$column) && cv$column %in% colnames(x)
@@ -235,8 +192,6 @@ cv_distance <- function(
     full_to_p <- match(seq_len(n), x_1s)
 
     # sample-to-sample distances and prediction-to-sample distances -----------
-    # Gtransfer: prediction-to-sample distances for the transfer domain (feature space only)
-    Gtransfer <- NULL
     if(space == "geographical"){
         tdist <- sf::st_distance(xp)
         units(tdist) <- NULL
@@ -244,15 +199,9 @@ cv_distance <- function(
         units(Gij) <- NULL
         Gij <- apply(Gij, 1, min)
     } else{
-        ft <- .knndm_features(xp, r, predpts, scale, transfer = transfer, transfer_pts = transfer_pts)
+        ft <- .knndm_features(xp, r, predpts, scale)
         tdist <- as.matrix(stats::dist(ft$train))
         Gij <- .nn_cross(ft$pred, ft$train)
-        if(!is.null(transfer)){
-            if(!nrow(ft$transfer)){
-                stop("No valid 'transfer' covariate values were extracted; check that 'transfer' overlaps its own cells and shares the predictors of 'r'.")
-            }
-            Gtransfer <- .nn_cross(ft$transfer, ft$train)
-        }
     }
 
     # sample-to-nearest-other-sample (LOO) distances
@@ -320,27 +269,13 @@ cv_distance <- function(
         W <- c(W, Random = mean(vapply(rand_draws, .wasserstein, numeric(1), b = Gij)))
     }
 
-    # Wasserstein-1 distances to the transfer distribution (optional). The CV curve
-    # is unchanged; W_transfer["CV"] reports how faithfully the fold design rehearses
-    # the transfer task, and the LOO entry shows the gap to the achievability ceiling.
-    W_transfer <- NULL
-    if(!is.null(Gtransfer)){
-        W_transfer <- c(
-            CV = .wasserstein(Gjstar, Gtransfer),
-            LOO = .wasserstein(Gj, Gtransfer),
-            Prediction = .wasserstein(Gij, Gtransfer)
-        )
-    }
-
     list(
         distances = dist_summary,
         W = W,
-        W_transfer = W_transfer,
         # raw nearest-neighbour vectors for the distribution plot
         Gij = Gij,
         Gjstar = Gjstar,
         Gj = Gj,
-        Gtransfer = Gtransfer,
         rand_draws = rand_draws,
         show_random = show_random,
         pbg = pbg
@@ -354,11 +289,9 @@ cv_distance <- function(
 .cv_distance_plot <- function(d){
     Gij <- d$Gij; Gjstar <- d$Gjstar; Gj <- d$Gj
     rand_draws <- d$rand_draws; show_random <- d$show_random; W <- d$W
-    Gtransfer <- d$Gtransfer; W_transfer <- d$W_transfer
-    has_transfer <- !is.null(Gtransfer)
 
     # distance distribution functions for plotting ----------------------------
-    max_r <- max(c(Gij, Gjstar, Gj, unlist(rand_draws), Gtransfer))
+    max_r <- max(c(Gij, Gjstar, Gj, unlist(rand_draws)))
     r_range <- seq(0, max_r, length.out = 200)
     plot_data <- data.frame(r = r_range,
                             Prediction = stats::ecdf(Gij)(r_range),
@@ -371,20 +304,10 @@ cv_distance <- function(
         plot_data$Random_lo <- apply(M, 1, stats::quantile, probs = 0.1)
         plot_data$Random_hi <- apply(M, 1, stats::quantile, probs = 0.9)
     }
-    if(has_transfer){
-        plot_data$Transfer <- stats::ecdf(Gtransfer)(r_range)
-    }
 
-    cols <- c(Prediction = "#000000", LOO = "#56B4E9", Random = "#009E73", CV = "#E69F00", Transfer = "#D55E00")
-    present <- c("Prediction", "LOO", if(show_random) "Random", "CV", if(has_transfer) "Transfer")
+    cols <- c(Prediction = "#000000", LOO = "#56B4E9", Random = "#009E73", CV = "#E69F00")
+    present <- c("Prediction", "LOO", if(show_random) "Random", "CV")
     w_lab <- paste(sprintf("%s: %.3g", names(W), W), collapse = "   ")
-    # the Transfer curve is a second target (a reference, not a curve the design
-    # should be pushed to match), so it is drawn dashed to set it apart
-    subtitle <- paste0("Wasserstein-1 to prediction (lower = closer)   ", w_lab)
-    if(has_transfer){
-        wt_lab <- paste(sprintf("%s: %.3g", names(W_transfer), W_transfer), collapse = "   ")
-        subtitle <- paste0(subtitle, "\nWasserstein-1 to transfer   ", wt_lab)
-    }
 
     plt <- ggplot2::ggplot(plot_data, ggplot2::aes(x = get("r"))) +
         ggplot2::geom_step(alpha = 0.7, linewidth = 1.2, ggplot2::aes(y = get("Prediction"), color = "Prediction")) +
@@ -397,16 +320,10 @@ cv_distance <- function(
                                ggplot2::aes(y = get("Random"), color = "Random"))
     }
     plt <- plt +
-        ggplot2::geom_step(alpha = 0.7, linewidth = 1.2, ggplot2::aes(y = get("CV"), color = "CV"))
-    if(has_transfer){
-        plt <- plt +
-            ggplot2::geom_step(alpha = 0.7, linewidth = 1.2, linetype = "dashed",
-                               ggplot2::aes(y = get("Transfer"), color = "Transfer"))
-    }
-    plt <- plt +
+        ggplot2::geom_step(alpha = 0.7, linewidth = 1.2, ggplot2::aes(y = get("CV"), color = "CV")) +
         ggplot2::scale_color_manual(values = cols, breaks = present) +
         ggplot2::labs(color = "", x = "r", y = expression(G[r]),
-                      subtitle = subtitle,
+                      subtitle = paste0("Wasserstein-1 to prediction (lower = closer)   ", w_lab),
                       caption = if(d$pbg) "Presence-background object: distances computed on presences only" else NULL) +
         ggplot2::theme_bw() +
         ggplot2::theme(legend.text = ggplot2::element_text(size = 12))
@@ -421,10 +338,6 @@ print.cv_distance <- function(x, ...){
     cat("blockCV cv_distance diagnostic\n")
     cat("\nWasserstein-1 distance to the prediction distribution (lower = closer):\n")
     print(round(x$W, 4))
-    if(!is.null(x$W_transfer)){
-        cat("\nWasserstein-1 distance to the transfer distribution (lower = closer):\n")
-        print(round(x$W_transfer, 4))
-    }
     if(!is.null(x$distances)){
         cat("\nPer-fold test-to-nearest-train distances:\n")
         print(x$distances, row.names = FALSE)

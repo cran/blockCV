@@ -10,7 +10,6 @@ cv_distance(
   r = NULL,
   pred_points = NULL,
   model_domain = NULL,
-  transfer = NULL,
   space = "geographical",
   add_random = TRUE,
   num_random = 10L,
@@ -38,11 +37,6 @@ used directly as the prediction locations instead of sampling from \code{r} or \
 
 \item{model_domain}{an sf polygon of the prediction area (optional). If provided (and \code{pred_points}
 is not), prediction points are sampled from it.}
-
-\item{transfer}{a terra SpatRaster object (optional) defining a second, transfer prediction domain -- for
-example a future climate scenario or a different region -- to compare the fold design against. It must carry
-the same predictor layers as \code{r} (identical names) and is only supported when \code{space = "feature"},
-where its covariates are standardised with the same centring/scaling as the training data. See details.}
 
 \item{space}{character; \code{"geographical"} (default) matches distances in geographical space, or
 \code{"feature"} matches distances in the (scaled) covariate space of \code{r}.}
@@ -78,9 +72,6 @@ an object of class \code{cv_distance}: a list with
   held-out point.}
   \item{\code{W} - a named numeric vector of the Wasserstein-1 distance of each curve to the
   Prediction curve (lower means a closer match to the prediction domain).}
-  \item{\code{W_transfer} - only present when \code{transfer} is supplied: a named numeric vector of the
-  Wasserstein-1 distance of the \code{CV}, \code{LOO} and \code{Prediction} curves to the Transfer curve
-  (lower means a closer match to the transfer domain). \code{W_transfer["CV"]} is the transferability read.}
   \item{\code{plot} - the \code{ggplot} of the nearest-neighbour distance distributions (always built,
   whether or not it is drawn).}
 }
@@ -98,7 +89,7 @@ the distances the model will face when predicting over the target area. It does 
 distances for general use; it is a fold-quality diagnostic.
 }
 \details{
-Three to five empirical cumulative distribution functions of nearest-neighbour distances
+Three (optionally four) empirical cumulative distribution functions of nearest-neighbour distances
 are compared over a distance \code{r}:
 \itemize{
   \item{\strong{Prediction} (\eqn{\hat{G}_{ij}}) - from each prediction point to its nearest sample
@@ -112,9 +103,6 @@ are compared over a distance \code{r}:
   as \code{cv}, drawn only when \code{add_random = TRUE}. It shows where a naive random assignment lands,
   so the improvement of the supplied design is visible. For leave-one-out objects (\code{cv_buffer},
   \code{cv_nndm}) a random split coincides with the LOO curve, so it is omitted.}
-  \item{\strong{Transfer} - from each point of a \code{transfer} domain to its nearest sample point,
-  drawn only when \code{transfer} is supplied (see below). This is the distance regime the model meets
-  when transferred to that domain.}
 }
 
 The gap between each curve and the Prediction curve is summarised by the Wasserstein-1 distance (the
@@ -123,17 +111,6 @@ shown in the subtitle and attached to the returned plot as \code{attr(p, "W")}.
 
 When \code{space = "feature"} the distances are computed in the (optionally scaled) covariate space of
 \code{r} instead of the geographical space, mirroring \code{\link{cv_knndm}}.
-
-\strong{Transfer domain.} When a \code{transfer} raster is supplied, the diagnostic adds the
-\strong{Transfer} curve above and, in \code{$W_transfer}, the Wasserstein-1 distance of the CV, LOO and
-Prediction curves to it. \code{W_transfer["CV"]} is the headline transferability read: how faithfully the
-fold design rehearses the transfer task (lower means the cross-validation is a fairer rehearsal of the
-transfer). A Transfer curve that sits to the right of the LOO curve flags a domain that no fold design
-built from these samples can emulate, i.e. extrapolation beyond the support of the training data, which
-cross-validation cannot validate. Because the transfer domain is compared in the (shared, training-scaled)
-covariate space, \code{transfer} is only supported when \code{space = "feature"}; it must carry the same
-predictor layers as \code{r} (matched by name and standardised the same way), and it may cover a different
-time (e.g. a future climate scenario) or a different region entirely.
 
 When the supplied \code{cv} object was built with \code{presence_bg = TRUE} (in \code{\link{cv_spatial}},
 \code{\link{cv_cluster}}, \code{\link{cv_knndm}}, \code{\link{cv_buffer}} or \code{\link{cv_nndm}}), all

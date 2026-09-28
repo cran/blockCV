@@ -398,40 +398,24 @@ cv_knndm <- function(
         return(sf::st_sample(sf::st_geometry(model_domain), size = num_sample, type = sampling))
     }
     if(is.null(r)) stop("Provide one of 'r', 'pred_points', or 'model_domain' to define the prediction area.")
-    return(.sample_raster_points(r, num_sample, sampling, name = "r"))
-}
-
-
-# sample points from the non-NA cells of a raster's first layer (shared by the
-# prediction-point resolver and the transfer-domain sampling in cv_distance)
-.sample_raster_points <- function(r, num_sample, sampling, name = "r"){
     rx <- tryCatch(
         terra::spatSample(r[[1]], size = num_sample, method = sampling,
                           values = FALSE, na.rm = TRUE, as.points = TRUE),
-        error = function(cond) stop("Sampling the raster '", name, "' failed: ", conditionMessage(cond))
+        error = function(cond) stop("Sampling the raster 'r' failed: ", conditionMessage(cond))
     )
-    if(is.null(rx) || nrow(rx) == 0) stop("Sampling the raster '", name, "' returned no points.")
+    if(is.null(rx) || nrow(rx) == 0) stop("Sampling the raster 'r' returned no points.")
     return(sf::st_geometry(sf::st_as_sf(rx)))
 }
 
 
-# extract and scale covariates at the sample and prediction points (feature space).
-# When 'transfer' (a raster of the same predictors) and 'transfer_pts' are supplied,
-# its covariates are extracted and standardised with the SAME centring/scaling as the
-# training data, so a transfer domain (future scenario or different region) is placed
-# in the training feature space.
-.knndm_features <- function(x, r, predpts, scale, transfer = NULL, transfer_pts = NULL){
+# extract and scale covariates at the sample and prediction points (feature space)
+.knndm_features <- function(x, r, predpts, scale){
     train <- terra::extract(r, x, ID = FALSE)
     if(anyNA(train)) stop("Some 'x' points fall outside 'r' (missing covariate values).")
     pred <- terra::extract(r, sf::st_sf(geometry = predpts), ID = FALSE)
     pred <- pred[stats::complete.cases(pred), , drop = FALSE]
     train <- as.matrix(train)
     pred <- as.matrix(pred)
-    tr <- NULL
-    if(!is.null(transfer)){
-        tr <- terra::extract(transfer, sf::st_sf(geometry = transfer_pts), ID = FALSE)
-        tr <- as.matrix(tr[stats::complete.cases(tr), , drop = FALSE])
-    }
     if(scale){
         train <- base::scale(train)
         ctr <- attr(train, "scaled:center")
@@ -444,11 +428,10 @@ cv_knndm <- function(
             scl[zero_var] <- 1
         }
         pred <- sweep(sweep(pred, 2, ctr, "-"), 2, scl, "/")
-        if(!is.null(tr)) tr <- sweep(sweep(tr, 2, ctr, "-"), 2, scl, "/")
         attr(train, "scaled:center") <- NULL
         attr(train, "scaled:scale") <- NULL
     }
-    return(list(train = train, pred = pred, transfer = tr))
+    return(list(train = train, pred = pred))
 }
 
 

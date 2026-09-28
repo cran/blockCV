@@ -1,8 +1,8 @@
 Package: blockCV
 Type: Package
 Title: Spatial and Environmental Blocking for Cross-Validation
-Version: 4.0-0
-Date: 2026-08-15
+Version: 4.0-1
+Date: 2026-09-22
 Authors@R: c(person("Roozbeh", "Valavi", role = c("aut", "cre"),
                     email = "valavi.r@gmail.com", comment = c(ORCID = "0000-0003-2495-5277")),
              person("Jane", "Elith", role = "aut",
@@ -38,7 +38,7 @@ Config/testthat/edition: 3
 LinkingTo: Rcpp
 Config/roxygen2/version: 8.0.0
 NeedsCompilation: yes
-Packaged: 2026-08-15 10:10:55 UTC; val085
+Packaged: 2026-09-28 01:10:48 UTC; val085
 Author: Roozbeh Valavi [aut, cre] (ORCID:
     <https://orcid.org/0000-0003-2495-5277>),
   Jane Elith [aut],
@@ -46,4 +46,4 @@ Author: Roozbeh Valavi [aut, cre] (ORCID:
   Ian Flint [aut],
   Gurutzeta Guillera-Arroita [aut]
 Repository: CRAN
-Date/Publication: 2026-08-20 11:12:25 UTC
+Date/Publication: 2026-09-28 02:50:02 UTC

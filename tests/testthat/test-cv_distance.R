@@ -104,50 +104,12 @@ test_that("cv_distance errors on a non-cv object", {
 })
 
 
-test_that("cv_distance adds a Transfer curve and W_transfer with a transfer raster", {
+test_that("print and plot methods for cv_distance run", {
+    res <- cv_distance(cv = scv, x = pa_data, r = aus,
+                       num_sample = 2000, seed = 1, plot = FALSE)
 
-    # a stand-in transfer domain (e.g. a future scenario): same layers, shifted values
-    fut <- aus + 2
-    names(fut) <- names(aus)
-
-    res <- cv_distance(cv = scv, x = pa_data, r = aus, transfer = fut,
-                       space = "feature", num_sample = 2000, seed = 1, plot = FALSE)
-
-    expect_s3_class(res, "cv_distance")
-    expect_true("W_transfer" %in% names(res))
-    expect_named(res$W_transfer, c("CV", "LOO", "Prediction"))
-    expect_true(all(res$W_transfer >= 0))
-    # the Transfer curve is drawn (its ecdf column is in the plot data)
-    expect_true("Transfer" %in% names(res$plot$data))
-    expect_true(ggplot2::is_ggplot(res$plot))
-})
-
-
-test_that("cv_distance omits W_transfer when no transfer raster is supplied", {
-
-    res <- cv_distance(cv = scv, x = pa_data, r = aus, space = "feature",
-                       num_sample = 2000, plot = FALSE)
-    expect_false("W_transfer" %in% names(res))
-})
-
-
-test_that("transfer requires feature space and matching layers", {
-
-    fut <- aus + 2
-    names(fut) <- names(aus)
-
-    # geographical space is not supported with a transfer domain
-    expect_error(
-        cv_distance(cv = scv, x = pa_data, r = aus, transfer = fut,
-                    space = "geographical", num_sample = 500, plot = FALSE),
-        "only supported when space"
-    )
-
-    # a transfer raster with different layers is rejected
-    fut_bad <- fut[[1:3]]
-    expect_error(
-        cv_distance(cv = scv, x = pa_data, r = aus, transfer = fut_bad,
-                    space = "feature", num_sample = 500, plot = FALSE),
-        "same layers"
-    )
+    expect_output(print(res), "cv_distance diagnostic")
+    expect_output(print(res), "Wasserstein")
+    expect_output(print(res), "Per-fold")
+    expect_true(ggplot2::is_ggplot(plot(res)))
 })
